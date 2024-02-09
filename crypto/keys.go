@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	privKeyLen = 64
-	pubKeyLen  = 32
-	seedLen    = 32
-	addressLen = 20
+	privKeyLen   = 64
+	signatureLen = 64
+	pubKeyLen    = 32
+	seedLen      = 32
+	addressLen   = 20
 )
 
 // Private Key
@@ -84,6 +85,15 @@ func (p *PublicKey) Address() Address {
 	}
 }
 
+func PublicKeyFromBytes(b []byte) *PublicKey {
+	if len(b) != pubKeyLen{
+		panic("invalid bytes")
+	}
+	return &PublicKey{
+		key: ed25519.PublicKey(b),
+	}
+}
+
 // Signature
 type Signature struct {
 	value []byte
@@ -95,6 +105,15 @@ func (s *Signature) Bytes() []byte {
 
 func (s *Signature) Verify(pubKey *PublicKey, msg []byte) bool {
 	return ed25519.Verify(pubKey.key, msg, s.value)
+}
+
+func SignatureFromBytes(b []byte) *Signature {
+	if len(b) != signatureLen {
+		panic("length of byttes should be 64")
+	}
+	return &Signature{
+		value: b,
+	}
 }
 
 // Address
