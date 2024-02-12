@@ -19,7 +19,7 @@ type Node struct {
 	logger     *zap.SugaredLogger
 
 	peers    map[proto.NodeClient]*proto.Version
-	peerLock sync.Mutex
+	peerLock sync.RWMutex
 
 	proto.UnimplementedNodeServer
 }
@@ -35,6 +35,7 @@ func NewNode() *Node {
 	}
 }
 
+// Receive Dial
 func (n *Node) Start(listenAddr string) error {
 	n.listenAddr = listenAddr
 	opts := []grpc.ServerOption{}
@@ -66,14 +67,16 @@ func (n *Node) BootstrapNetwork(addrs []string) error {
 	return nil
 }
 
-func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*proto.Acquired, error) {
-	peer, _ := peer.FromContext(ctx)
-	fmt.Println("received tx from:", peer)
-	return &proto.Acquired{}, nil
+// Dial
+func makeNodeCient(listenAddr string) (proto.NodeClient, error) {
+	c, err := grpc.Dial(listenAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+	return proto.NewNodeClient(c), err
 }
 
 func (n *Node) Handshake(ctx context.Context, v *proto.Version) (*proto.Version, error) {
-
 	c, err := makeNodeCient(v.ListenAddr)
 	if err != nil {
 		return nil, err
@@ -84,13 +87,22 @@ func (n *Node) Handshake(ctx context.Context, v *proto.Version) (*proto.Version,
 	return n.getVersion(), nil
 }
 
+func (n *Node) HandleTransaction(ctx context.Context, tx *proto.Transaction) (*proto.Acquired, error) {
+	peer, _ := peer.FromContext(ctx)
+	fmt.Println("received tx from:", peer)
+	return &proto.Acquired{}, nil
+}
+
 func (n *Node) addPeer(c proto.NodeClient, v *proto.Version) {
 	n.peerLock.Lock()
 	defer n.peerLock.Unlock()
 
-	n.logger.Infow("new peer connected", "addr", v.ListenAddr, "height", v.Height)
-
 	n.peers[c] = v
+
+	for _, addr := range v.PeerList {
+		fmt.Printf("[%s] need to connect to [%s]", n.listenAddr, addr)
+	}
+	n.logger.Infow("new peer connected", "addr", v.ListenAddr, "height", v.Height)
 }
 
 func (n *Node) deletePeer(c proto.NodeClient) {
@@ -99,18 +111,22 @@ func (n *Node) deletePeer(c proto.NodeClient) {
 	delete(n.peers, c)
 }
 
-func makeNodeCient(listenAddr string) (proto.NodeClient, error) {
-	c, err := grpc.Dial(listenAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		return nil, err
-	}
-	return proto.NewNodeClient(c), err
-}
-
 func (n *Node) getVersion() *proto.Version {
 	return &proto.Version{
 		Version:    "gochain-0.1",
 		Height:     0,
 		ListenAddr: n.listenAddr,
+		PeerList:   n.getPeerList(),
 	}
+}
+
+func (n *Node) getPeerList() []string {
+	n.peerLock.RLock()
+	defer n.peerLock.RUnlock()
+
+	peers := []string{}
+	for _, version := range n.peers {
+		peers = append(peers, version.ListenAddr)
+	}
+	return peers
 }
