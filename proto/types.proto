@@ -2,7 +2,18 @@ syntax = "proto3";
 
 option go_package = "github.com/DenisBytes/GoChain/proto";
 
-message Block{
+service Node {
+    rpc Handshake(Version) returns (Version);
+    rpc HandleTransaction(Transaction) returns (Acquired);
+}
+
+message Version{
+    string version = 1;
+    int32 height = 2;
+    string listenAddr = 3;
+}
+
+message Block {
     Header header = 1;
     repeated Transaction transactions = 2;
 }
@@ -29,8 +40,6 @@ message TxInput {
 message TxOutput {
     int64 amount = 1;
     bytes address = 2;
-
-
 }
 
 message Transaction {
@@ -38,3 +47,5 @@ message Transaction {
     repeated TxInput inputs = 2;
     repeated TxOutput outputs = 3;
 }
+
+message Acquired { }
