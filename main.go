@@ -3,22 +3,21 @@ package main
 import (
 	"context"
 	"log"
+	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/DenisBytes/GoChain/node"
 	"github.com/DenisBytes/GoChain/proto"
-	"google.golang.org/grpc"
+
 )
 
 func main() {
-	makeNode(":8000", []string{})
-	makeNode(":3000", []string{":8000"})
-
-	// go func() {
-	// 	for {
-	// 		time.Sleep(2 * time.Second)
-	// 		makeTransaction()
-	// 	}
-	// }()
+	makeNode(":3000", []string{})
+	time.Sleep(time.Second)
+	makeNode(":4000", []string{":3000"})
+	time.Sleep(4 * time.Second)
+	makeNode(":5000", []string{":4000"})
 
 	select {}
 
@@ -26,12 +25,8 @@ func main() {
 
 func makeNode(listenAddr string, bootstrapNodes []string) *node.Node {
 	n := node.NewNode()
-	go n.Start(listenAddr)
-	if len(bootstrapNodes) > 0 {
-		if err := n.BootstrapNetwork(bootstrapNodes); err != nil {
-			log.Fatal("bootstarp err", err)
-		}
-	}
+	go n.Start(listenAddr, bootstrapNodes)
+
 	return n
 }
 
