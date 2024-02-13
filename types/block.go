@@ -7,16 +7,11 @@ import (
 
 	"github.com/DenisBytes/GoChain/crypto"
 	"github.com/DenisBytes/GoChain/proto"
-
 )
 
 // Hashblock returns a SHA-256 of the header.
 func HashBlock(block *proto.Block) []byte {
-	return HashHeader(block.Header)
-}
-
-func HashHeader(header *proto.Header) []byte {
-	b, err := pb.Marshal(header)
+	b, err := pb.Marshal(block)
 	if err != nil {
 		panic(err)
 	}

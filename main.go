@@ -9,7 +9,6 @@ import (
 
 	"github.com/DenisBytes/GoChain/node"
 	"github.com/DenisBytes/GoChain/proto"
-
 )
 
 func main() {
