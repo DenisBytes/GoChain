@@ -1,12 +1,13 @@
 package node
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 
+	"github.com/DenisBytes/GoChain/crypto"
 	"github.com/DenisBytes/GoChain/proto"
 	"github.com/DenisBytes/GoChain/types"
-
 )
 
 type HeaderList struct {
@@ -44,10 +45,12 @@ type Chain struct {
 }
 
 func NewChain(bs BlockStorer) *Chain {
-	return &Chain{
+	chain := &Chain{
 		blockStore: bs,
 		headers:    NewHeadersList(),
 	}
+	chain.addBlock(createGenesisBlock())
+	return chain
 }
 
 func (c *Chain) Height() int {
@@ -55,6 +58,14 @@ func (c *Chain) Height() int {
 }
 
 func (c *Chain) AddBlock(b *proto.Block) error {
+	if err := c.ValidateBlock(b); err != nil {
+		return err
+	}
+
+	return c.addBlock(b)
+}
+
+func (c *Chain) addBlock(b *proto.Block) error {
 	c.headers.Add(b.Header)
 
 	return c.blockStore.Put(b)
@@ -72,4 +83,33 @@ func (c *Chain) GetBlockByHeight(height int) (*proto.Block, error) {
 	header := c.headers.Get(height)
 	hash := types.HashHeader(header)
 	return c.GetBlockByHash(hash)
+}
+
+func (c *Chain) ValidateBlock(b *proto.Block) error {
+
+	if !types.VerifyBlock(b) {
+		return fmt.Errorf("invalid block signature")
+	}
+
+	currentBlock, err := c.GetBlockByHeight(c.Height())
+	if err != nil {
+		return err
+	}
+	hash := types.HashBlock(currentBlock)
+	if !bytes.Equal(hash, b.Header.PrevHash) {
+		return fmt.Errorf("invalid previous block hash")
+	}
+	return nil
+}
+
+func createGenesisBlock() *proto.Block {
+	privKey := crypto.GeneratePrivateKey()
+	block := &proto.Block{
+		Header: &proto.Header{
+			Version: 1,
+		},
+	}
+	types.SignBlock(privKey, block)
+
+	return block
 }

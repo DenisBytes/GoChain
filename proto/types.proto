@@ -17,6 +17,8 @@ message Version{
 message Block {
     Header header = 1;
     repeated Transaction transactions = 2;
+    bytes publicKey = 3;
+    bytes signature = 4;
 }
 
 message Header {
