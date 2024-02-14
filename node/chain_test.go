@@ -69,7 +69,6 @@ func TestAddBlockWithTx(t *testing.T) {
 
 	fakeTxx, err := chain.txStore.Get("4420225c7f075f1a6210879f0da7e3cd55dd5183a5efae4110dda7dbaea98119")
 	assert.Nil(t, err)
-	fmt.Println(fakeTxx)
 
 	inputs := []*proto.TxInput{
 		{
@@ -93,12 +92,22 @@ func TestAddBlockWithTx(t *testing.T) {
 		Inputs:  inputs,
 		Outputs: outputs,
 	}
-	block.Transactions = append(block.Transactions, tx)
 
+	sig := types.SignTransaction(privKey, tx)
+	tx.Inputs[0].Signature = sig.Bytes()
+
+	block.Transactions = append(block.Transactions, tx)
 	require.Nil(t, chain.AddBlock(block))
 	txHash := hex.EncodeToString(types.HashTransaction(tx))
 
 	fetchedTx, err := chain.txStore.Get(txHash)
 	assert.Nil(t, err)
 	assert.Equal(t, tx, fetchedTx)
+
+	address := crypto.AddressFromBytes(tx.Outputs[1].Address)
+	key := fmt.Sprintf("%s_%s", address, txHash)
+
+	utxo, err := chain.utxoStore.Get(key)
+	assert.Nil(t, err)
+	fmt.Println(utxo)
 }

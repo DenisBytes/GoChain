@@ -109,7 +109,7 @@ func (s *Signature) Verify(pubKey *PublicKey, msg []byte) bool {
 
 func SignatureFromBytes(b []byte) *Signature {
 	if len(b) != SignatureLen {
-		panic("length of byttes should be 64")
+		panic("length of bytes should be 64")
 	}
 	return &Signature{
 		value: b,
@@ -127,4 +127,13 @@ func (a Address) Bytes() []byte {
 
 func (a Address) String() string {
 	return hex.EncodeToString(a.value)
+}
+
+func AddressFromBytes(b []byte) Address {
+	if len(b) != AddressLen {
+		panic("length of bytes should be 20")
+	}
+	return Address{
+		value: b,
+	}
 }
