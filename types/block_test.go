@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/DenisBytes/GoChain/crypto"
+	"github.com/DenisBytes/GoChain/proto"
 	"github.com/DenisBytes/GoChain/util"
 )
 
@@ -35,4 +36,17 @@ func TestSignVerifyBlock(t *testing.T) {
 	block.PublicKey = invalidPRivKey.Public().Bytes()
 
 	assert.False(t, VerifyBlock(block))
+}
+
+func TestCalculateRootHash(t *testing.T) {
+	privKey := crypto.GeneratePrivateKey()
+	block := util.RandomBlock()
+	tx := &proto.Transaction{
+		Version: 1,
+	}
+	block.Transactions = append(block.Transactions, tx)
+	SignBlock(privKey, block)
+
+	assert.True(t, VerifyRootHash(block))
+	assert.Equal(t, 32, len(block.Header.RootHash))
 }

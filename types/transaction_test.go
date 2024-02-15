@@ -1,7 +1,6 @@
 package types
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/DenisBytes/GoChain/crypto"
@@ -44,6 +43,4 @@ func TestNewTransaction(t *testing.T) {
 	input.Signature = sig.Bytes()
 
 	assert.True(t, VerifyTransaction(tx))
-
-	fmt.Printf("%+v\n", tx)
 }
